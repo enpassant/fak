@@ -52,7 +52,7 @@ const generateCsv = (table) => {
     table.rows.forEach(row =>
         csv.push(row.join(', '))
     );
-    let blob = new Blob([csv.join('\n')], {type: "application/csv;charset=utf-8"});
+    let blob = new Blob([csv.join('\n')], {type: "text/csv;charset=utf-8"});
     saveAs(blob, "values.csv");
 }
 
