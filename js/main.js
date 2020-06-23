@@ -1,10 +1,14 @@
-const Model = {
+const storedModel = JSON.parse(window.localStorage.getItem("fakModel"));
+
+const initModel = {
     command: "+",
     table: {
         head: [ ],
         rows: [ [] ]
     }
 }
+
+const Model = storedModel && storedModel.table ? storedModel : initModel;
 
 const toggleCommand = (model) =>
     model.command = doCommand(
@@ -21,6 +25,15 @@ const applyCommandOnCell = (command, row, valueIdx) =>
         () => row[valueIdx] - 1,
         () => 0
     )
+
+const clear = (rows) => {
+    rows.forEach(row => row.forEach((v, i) => row[i] = 0))
+}
+
+const reset = (model) => {
+    model.command = initModel.command
+    model.table = initModel.table
+}
 
 const addColumn = (title, table) => {
     table.head.push(title)
@@ -71,10 +84,13 @@ const TableView = function(model) {
 const ButtonView = function (title, onClickFn) {
     return {
         view: function(vNode) {
-            return m("button", {onclick: onClickFn}, title)
+            return m("button", {onclick: onClickFn }, title)
         }
     }
 }
+
+const storeModel = (model) =>
+    window.localStorage.setItem("fakModel", JSON.stringify(model))
 
 function doCommand(command, fnPlus, fnMinus, fnZero) {
     if (command === '+') {
@@ -89,10 +105,12 @@ function doCommand(command, fnPlus, fnMinus, fnZero) {
 m.mount(document.body, {
     view: function(vNode) {
         return [
-            m(ButtonView(Model.command, () => toggleCommand(Model))),
-            m(ButtonView("addColumn", () => addColumn("type", Model.table))),
-            m(ButtonView("addRow", () => addRow(Model.table.rows))),
+            m(ButtonView(Model.command, () => toggleCommand(Model), storeModel(Model))),
+            m(ButtonView("addColumn", () => addColumn("type", Model.table), storeModel(Model))),
+            m(ButtonView("addRow", () => addRow(Model.table.rows), storeModel(Model))),
             m(ButtonView("generateCsv", () => generateCsv(Model.table))),
+            m(ButtonView("clear", () => clear(Model.table.rows), storeModel(Model))),
+            m(ButtonView("reset", () => reset(Model), storeModel(Model))),
             m(TableView(Model))
         ]
     }
