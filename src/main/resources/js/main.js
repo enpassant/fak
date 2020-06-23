@@ -84,7 +84,7 @@ const TableView = function(model) {
 const ButtonView = function (title, onClickFn) {
     return {
         view: function(vNode) {
-            return m("button", {onclick: onClickFn }, title)
+            return m("a", {onclick: onClickFn }, title)
         }
     }
 }
@@ -105,12 +105,14 @@ function doCommand(command, fnPlus, fnMinus, fnZero) {
 m.mount(document.body, {
     view: function(vNode) {
         return [
-            m(ButtonView(Model.command, () => toggleCommand(Model), storeModel(Model))),
-            m(ButtonView("addColumn", () => addColumn("type", Model.table), storeModel(Model))),
-            m(ButtonView("addRow", () => addRow(Model.table.rows), storeModel(Model))),
-            m(ButtonView("generateCsv", () => generateCsv(Model.table))),
-            m(ButtonView("clear", () => clear(Model.table.rows), storeModel(Model))),
-            m(ButtonView("reset", () => reset(Model), storeModel(Model))),
+            m("div.menu",
+                m(ButtonView(Model.command, () => toggleCommand(Model), storeModel(Model))),
+                m(ButtonView("Column", () => addColumn("type", Model.table), storeModel(Model))),
+                m(ButtonView("Row", () => addRow(Model.table.rows), storeModel(Model))),
+                m(ButtonView("CSV", () => generateCsv(Model.table))),
+                m(ButtonView("Clear", () => clear(Model.table.rows), storeModel(Model))),
+                m(ButtonView("Reset", () => reset(Model), storeModel(Model)))
+            ),
             m(TableView(Model))
         ]
     }
