@@ -1,116 +1,99 @@
-(function() {
-    const base = {};
-
-    function init() {
-        console.log("Init");
-        base.table = document.getElementById('table'),
-        base.commandEl = document.getElementById('command');
-        base.commandEl.addEventListener('click', clickCommand);
-        const addColumn = document.getElementById('addColumn');
-        addColumn.addEventListener('click', clickAddColumn);
-        const addRow = document.getElementById('addRow');
-        addRow.addEventListener('click', clickAddRow);
-        const generateCsv = document.getElementById('generateCsv');
-        generateCsv.addEventListener('click', clickGenerateCsv);
-        addEventListener('click', 'td.counter', clickCell);
+const Model = {
+    command: "+",
+    table: {
+        head: [ ],
+        rows: [ [] ]
     }
+}
 
-    function clickCommand(event) {
-        doCommand(
-            () => base.commandEl.textContent = '-',
-            () => base.commandEl.textContent = '0',
-            () => base.commandEl.textContent = '+'
-        );
-    }
+const toggleCommand = (model) =>
+    model.command = doCommand(
+        model.command,
+        () => '-',
+        () => '0',
+        () => '+'
+    )
 
-    function clickCell(event) {
-        const value = parseInt(event.target.textContent);
-        doCommand(
-            () => event.target.textContent = value + 1,
-            () => event.target.textContent = value - 1,
-            () => event.target.textContent = 0
-        );
-    }
+const applyCommandOnCell = (command, row, valueIdx) =>
+    row[valueIdx] = doCommand(
+        command,
+        () => row[valueIdx] + 1,
+        () => row[valueIdx] - 1,
+        () => 0
+    )
 
-    function clickGenerateCsv(event) {
-        let csv = [];
-        for (let i = 0; i < table.rows.length; i++) {
-            let row = table.rows[i];
-            let csvRow = [];
-            for (let j = 0; j < row.cells.length; j++) {
-                let cell = row.cells[j];
-                csvRow.push(cell.textContent);
-            }
-            csv.push(csvRow.join(', '));
-        }
-        let blob = new Blob([csv.join('\n')], {type: "text/plain;charset=utf-8"});
-        saveAs(blob, "values.csv");
-    }
+const addColumn = (title, table) => {
+    table.head.push(title)
+    table.rows.forEach(row => row.push(0))
+}
 
-    function clickAddColumn(event) {
-        appendColumn(base.table);
-    }
+const addRow = (rows) => {
+    rows.push(
+        rows[0].map(value => 0)
+    )
+}
 
-    function clickAddRow(event) {
-        appendRow(base.table);
-    }
+const generateCsv = (table) => {
+    let csv = [];
+    csv.push(table.head.join(', '));
+    table.rows.forEach(row =>
+        csv.push(row.join(', '))
+    );
+    let blob = new Blob([csv.join('\n')], {type: "application/csv;charset=utf-8"});
+    saveAs(blob, "values.csv");
+}
 
-    function doCommand(fnPlus, fnMinus, fnZero) {
-        const command = base.commandEl.textContent;
-        if (command === '+') {
-            fnPlus.apply();
-        } else if (command === '-') {
-            fnMinus.apply();
-        } else if (command === '0') {
-            fnZero.apply();
-        }
-    }
-
-    function appendRow(table) {
-        let row = table.insertRow(table.rows.length),
-            i;
-        for (i = 0; i < table.rows[0].cells.length; i++) {
-            let cell = row.insertCell(i);
-            if (i === 0) {
-                cell.textContent = (table.rows.length - 1) + '.';
-            } else {
-                cell.textContent = '0';
-                cell.className = 'counter';
-            }
+const TableView = function(model) {
+    return {
+        view: function(vNode) {
+            return m("table",
+                m("thead", m("tr", m("th"), model.table.head.map((h, index) =>
+                    m("th[contenteditable]",
+                        {onblur: function(e){
+                            model.table.head[index] = e.target.textContent
+                        }},
+                        m.trust(h))))),
+                m("tbody", model.table.rows.map((row, rowIdx) =>
+                    m("tr", m("td", (rowIdx + 1) + "."), row.map((value, valueIdx) =>
+                        m("td.counter", {onclick: (vNode) => applyCommandOnCell(
+                            model.command,
+                            model.table.rows[rowIdx],
+                            valueIdx
+                        )},
+                        value)
+                    ))
+                ))
+            )
         }
     }
+}
 
-    function appendColumn(table) {
-        var headerCell = document.createElement("TH");
-        headerCell.innerHTML = 'Type';
-        headerCell.contentEditable = 'true';
-        table.rows[0].appendChild(headerCell);
-
-        for (let i = 1; i < table.rows.length; i++) {
-            let cell = table.rows[i].insertCell(table.rows[i].cells.length);
-            cell.textContent = '0';
-            cell.className = 'counter';
+const ButtonView = function (title, onClickFn) {
+    return {
+        view: function(vNode) {
+            return m("button", {onclick: onClickFn}, title)
         }
     }
+}
 
-    function ready(fn) {
-        if (document.readyState != 'loading'){
-            init();
-        } else {
-            document.addEventListener('DOMContentLoaded', init);
-        }
+function doCommand(command, fnPlus, fnMinus, fnZero) {
+    if (command === '+') {
+        return fnPlus.apply();
+    } else if (command === '-') {
+        return fnMinus.apply();
+    } else if (command === '0') {
+        return fnZero.apply();
     }
+}
 
-    function addEventListener(eventName, elementSelector, handler) {
-        document.addEventListener(eventName, function(e) {
-            for (var target = e.target; target && target != this; target = target.parentNode) {
-                if (target.matches(elementSelector)) {
-                    handler.call(target, e);
-                    break;
-                }
-            }
-        }, false);
+m.mount(document.body, {
+    view: function(vNode) {
+        return [
+            m(ButtonView(Model.command, () => toggleCommand(Model))),
+            m(ButtonView("addColumn", () => addColumn("type", Model.table))),
+            m(ButtonView("addRow", () => addRow(Model.table.rows))),
+            m(ButtonView("generateCsv", () => generateCsv(Model.table))),
+            m(TableView(Model))
+        ]
     }
-
-    ready();
-})();
+})
