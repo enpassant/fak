@@ -12,6 +12,14 @@ table {
   border-collapse: collapse;
 }
 
+table.minus {
+    background-color: red;
+}
+
+table.zero {
+    background-color: cyan;
+}
+
 th, td {
   padding: 0.5em;
 }

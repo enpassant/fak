@@ -46,6 +46,14 @@ const addRow = (rows) => {
     )
 }
 
+const command2class = (command) =>
+    doCommand(
+        command,
+        () => 'plus',
+        () => 'minus',
+        () => 'zero'
+    )
+
 const generateCsv = (table) => {
     let csv = [];
     csv.push(table.head.join(', '));
@@ -59,7 +67,7 @@ const generateCsv = (table) => {
 const TableView = function(model) {
     return {
         view: function(vNode) {
-            return m("table",
+            return m("table", { class: command2class(model.command) },
                 m("thead", m("tr", m("th"), model.table.head.map((h, index) =>
                     m("th[contenteditable]",
                         {onblur: function(e){
@@ -67,7 +75,7 @@ const TableView = function(model) {
                         }},
                         m.trust(h))))),
                 m("tbody", model.table.rows.map((row, rowIdx) =>
-                    m("tr", m("td", (rowIdx + 1) + "."), row.map((value, valueIdx) =>
+                    m("tr", m("td", rowIdx * 2 + 8), row.map((value, valueIdx) =>
                         m("td.counter", {onclick: (vNode) => applyCommandOnCell(
                             model.command,
                             model.table.rows[rowIdx],
